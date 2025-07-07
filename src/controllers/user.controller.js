@@ -244,10 +244,9 @@ const refreshAccessToken = asynchandler(async (req, res) => {
 
 const changeCurrentPassword = asynchandler(async(req, res) => {
     const {oldPassword, newPassword} = req.body
-
-    
-
+   
     const user = await User.findById(req.user?._id)
+
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
 
     if (!isPasswordCorrect) {
@@ -373,11 +372,16 @@ const getUserChannelProfile = asynchandler(async(req, res) => {
     }
 
     const channel = await User.aggregate([
-        {
-            $match: {
-                username: username?.toLowerCase()
-            }
-        },
+       {
+  $match: {
+    $expr: {
+      $eq: [
+        { $toLower: "$username" },
+        username.toLowerCase()
+      ]
+    }
+  }
+},
         {
             $lookup: {
                 from: "subscriptions",
@@ -426,6 +430,9 @@ const getUserChannelProfile = asynchandler(async(req, res) => {
         }
     ])
 
+  //  console.log("req.user:", req.user);
+
+  console.log("Channel aggregation result:", channel);
     if (!channel?.length) {
         throw new ApiError(404, "channel does not exists")
     }
